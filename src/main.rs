@@ -11,6 +11,7 @@ fn main() {
             .set(ImagePlugin::default_nearest()),
     )
     .add_systems(Startup, setup)
+    .add_systems(Update, update_cursor)
     .run();
 }
 
@@ -195,4 +196,36 @@ fn setup(
         },
         ..default()
     });
+}
+
+fn update_cursor(
+    mut commands: Commands,
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window>,
+    camera_q: Query<(&Camera, &GlobalTransform)>,
+    asset_server: Res<AssetServer>,
+) {
+    if mouse.just_pressed(MouseButton::Left) {
+        let window = windows.single();
+        let (camera, camera_transform) = camera_q.single();
+
+        if let Some(world_position) = window
+            .cursor_position()
+            .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
+        {
+            commands.spawn(SpriteBundle {
+                texture: asset_server.load("pieces/king_white.png"),
+                transform: Transform {
+                    translation: Vec3 {
+                        x: world_position.x,
+                        y: world_position.y,
+                        z: 0.0,
+                    },
+                    scale: Vec3::splat(10.0),
+                    ..default()
+                },
+                ..default()
+            });
+        }
+    }
 }
