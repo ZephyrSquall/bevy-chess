@@ -1,8 +1,7 @@
-use bevy::{
-    prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-};
+use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
+
+const SCALE: f32 = 5.0;
 
 fn main() {
     let mut app = App::new();
@@ -17,12 +16,7 @@ fn main() {
     .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    asset_server: Res<AssetServer>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
     let texture_handle: Handle<Image> = asset_server.load("tiles.png");
@@ -59,15 +53,8 @@ fn setup(
         texture: TilemapTexture::Single(texture_handle),
         tile_size,
         transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0)
-            .with_scale(Vec3::splat(10.0)),
+            .with_scale(Vec3::splat(SCALE)),
         ..Default::default()
-    });
-
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(meshes.add(Rectangle::new(50.0, 50.0))),
-        material: materials.add(Color::linear_rgb(1.0, 1.0, 1.0)),
-        transform: Transform::from_xyz(100.0, 0.0, 0.0),
-        ..default()
     });
 
     commands.spawn(SpriteBundle {
@@ -78,7 +65,7 @@ fn setup(
                 y: 100.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -92,7 +79,7 @@ fn setup(
                 y: 0.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -106,7 +93,7 @@ fn setup(
                 y: 100.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -120,7 +107,7 @@ fn setup(
                 y: 100.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -134,7 +121,7 @@ fn setup(
                 y: 260.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -148,7 +135,7 @@ fn setup(
                 y: 200.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -162,7 +149,7 @@ fn setup(
                 y: -200.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -176,7 +163,7 @@ fn setup(
                 y: -200.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -190,7 +177,7 @@ fn setup(
                 y: -200.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -204,7 +191,7 @@ fn setup(
                 y: -250.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -218,7 +205,7 @@ fn setup(
                 y: 200.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -232,7 +219,7 @@ fn setup(
                 y: 250.0,
                 z: 0.0,
             },
-            scale: Vec3::splat(10.0),
+            scale: Vec3::splat(SCALE),
             ..default()
         },
         ..default()
@@ -262,7 +249,7 @@ fn update_cursor(
                         y: world_position.y,
                         z: 0.0,
                     },
-                    scale: Vec3::splat(10.0),
+                    scale: Vec3::splat(SCALE),
                     ..default()
                 },
                 ..default()
