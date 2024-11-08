@@ -5,7 +5,7 @@ const MAP_SIZE: TilemapSize = TilemapSize { x: 8, y: 8 };
 const MAP_TYPE: TilemapType = TilemapType::Square;
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 10.0, y: 10.0 };
 const GRID_SIZE: TilemapGridSize = TilemapGridSize { x: 10.0, y: 10.0 };
-const SCALE: f32 = 5.0;
+const SCALE: f32 = 8.0;
 
 // Used to properly space sprites on the grid after it is scaled up.
 const SCALED_GRID_SIZE: TilemapGridSize = TilemapGridSize {
@@ -21,12 +21,12 @@ fn main() {
             .set(ImagePlugin::default_nearest()),
     )
     .add_plugins(TilemapPlugin)
-    .add_systems(Startup, (setup, setup_2).chain())
+    .add_systems(Startup, (setup_board, setup_pieces).chain())
     .add_systems(Update, update_cursor)
     .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_board(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
     let texture_handle: Handle<Image> = asset_server.load("tiles.png");
@@ -37,29 +37,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         for y in 0..MAP_SIZE.y {
             let tile_pos = TilePos { x, y };
             let tile_entity = commands
-                .spawn((
-                    TileBundle {
-                        position: tile_pos,
-                        // Create a checkerboard pattern by selecting the light or dark tile depending
-                        // on whether the sum of its coordinates is even or odd.
-                        texture_index: TileTextureIndex((x + y) % 2),
-                        tilemap_id: TilemapId(tilemap_entity),
-                        ..Default::default()
-                    },
-                    SpriteBundle {
-                        texture: asset_server.load("pieces/king_white.png"),
-                        transform: Transform {
-                            translation: Vec3 {
-                                x: x as f32 * SCALED_GRID_SIZE.x,
-                                y: y as f32 * SCALED_GRID_SIZE.y,
-                                z: 1.0,
-                            },
-                            scale: Vec3::splat(SCALE),
-                            ..default()
-                        },
-                        ..default()
-                    },
-                ))
+                .spawn(TileBundle {
+                    position: tile_pos,
+                    // Create a checkerboard pattern by selecting the light or dark tile depending
+                    // on whether the sum of its coordinates is even or odd.
+                    texture_index: TileTextureIndex((x + y) % 2),
+                    tilemap_id: TilemapId(tilemap_entity),
+                    ..Default::default()
+                })
                 .id();
             tile_storage.set(&tile_pos, tile_entity);
         }
@@ -78,9 +63,35 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     });
 }
 
-fn setup_2(mut _commands: Commands, tile_q: Query<&TilePos>) {
-    for tile in &tile_q {
-        println!("{}", tile.center_in_world(&SCALED_GRID_SIZE, &MAP_TYPE));
+fn setup_pieces(
+    mut commands: Commands,
+    tile_q: Query<(Entity, &TilePos)>,
+    tilemap_transform_q: Query<&Transform, With<TileStorage>>,
+    asset_server: Res<AssetServer>,
+) {
+    // Get the offset of the board from the center
+    let mut tilemat_offset = Vec2 { x: 0.0, y: 0.0 };
+    for transform in &tilemap_transform_q {
+        tilemat_offset.x = transform.translation.x;
+        tilemat_offset.y = transform.translation.y;
+    }
+
+    for (tile_id, tile_pos) in &tile_q {
+        let center = tile_pos.center_in_world(&SCALED_GRID_SIZE, &MAP_TYPE) + tilemat_offset;
+
+        commands.entity(tile_id).insert(SpriteBundle {
+            texture: asset_server.load("pieces/king_white.png"),
+            transform: Transform {
+                translation: Vec3 {
+                    x: center.x,
+                    y: center.y,
+                    z: 1.0,
+                },
+                scale: Vec3::splat(SCALE),
+                ..default()
+            },
+            ..default()
+        });
     }
 }
 
