@@ -42,7 +42,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     }
 
     let tile_size = TilemapTileSize { x: 10.0, y: 10.0 };
-    let grid_size = tile_size.into();
+    let grid_size: TilemapGridSize = tile_size.into();
+    let scaled_grid_size = TilemapGridSize {
+        x: grid_size.x * SCALE,
+        y: grid_size.y * SCALE,
+    };
     let map_type = TilemapType::default();
 
     commands.entity(tilemap_entity).insert(TilemapBundle {
@@ -52,177 +56,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         storage: tile_storage,
         texture: TilemapTexture::Single(texture_handle),
         tile_size,
-        transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0)
-            .with_scale(Vec3::splat(SCALE)),
+        transform: get_tilemap_center_transform(&map_size, &scaled_grid_size, &map_type, 0.0)
+            * Transform::from_scale(Vec3::splat(SCALE)),
         ..Default::default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/king_white.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: 100.0,
-                y: 100.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/king_black.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: 100.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/pawn_white.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: 200.0,
-                y: 100.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/pawn_black.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: 250.0,
-                y: 100.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/knight_white.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: 250.0,
-                y: 260.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/knight_black.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: 250.0,
-                y: 200.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/rook_white.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: -250.0,
-                y: -200.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/rook_black.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: -200.0,
-                y: -200.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/bishop_white.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: 200.0,
-                y: -200.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/bishop_black.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: 200.0,
-                y: -250.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/queen_white.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: -200.0,
-                y: 200.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
-    });
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("pieces/queen_black.png"),
-        transform: Transform {
-            translation: Vec3 {
-                x: -200.0,
-                y: 250.0,
-                z: 0.0,
-            },
-            scale: Vec3::splat(SCALE),
-            ..default()
-        },
-        ..default()
     });
 }
 
