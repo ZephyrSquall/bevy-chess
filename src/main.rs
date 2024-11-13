@@ -33,6 +33,16 @@ struct GamePiece {
     color: Color,
 }
 
+#[derive(Resource)]
+pub struct CursorPos(Vec2);
+impl Default for CursorPos {
+    fn default() -> Self {
+        // Initialize the cursor pos at some far away place. It will get updated
+        // correctly when the cursor moves.
+        Self(Vec2::new(-1000.0, -1000.0))
+    }
+}
+
 impl GamePiece {
     fn get_asset_path(&self) -> &str {
         match (&self.piece, &self.color) {
@@ -60,8 +70,10 @@ fn main() {
             .set(ImagePlugin::default_nearest()),
     )
     .add_plugins(TilemapPlugin)
+    .init_resource::<CursorPos>()
     .add_systems(Startup, (setup_board, setup_pieces).chain())
-    .add_systems(Update, update_cursor)
+    .add_systems(First, update_cursor_pos)
+    .add_systems(Update, highlight_tile)
     .run();
 }
 
@@ -472,38 +484,6 @@ fn setup_pieces(
     }
 }
 
-fn update_cursor(
-    mut commands: Commands,
-    mouse: Res<ButtonInput<MouseButton>>,
-    windows: Query<&Window>,
-    camera_q: Query<(&Camera, &GlobalTransform)>,
-    asset_server: Res<AssetServer>,
-) {
-    if mouse.just_pressed(MouseButton::Left) {
-        let window = windows.single();
-        let (camera, camera_transform) = camera_q.single();
-
-        if let Some(world_position) = window
-            .cursor_position()
-            .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
-        {
-            commands.spawn(SpriteBundle {
-                texture: asset_server.load("pieces/king_white.png"),
-                transform: Transform {
-                    translation: Vec3 {
-                        x: world_position.x,
-                        y: world_position.y,
-                        z: 0.0,
-                    },
-                    scale: Vec3::splat(SCALE),
-                    ..default()
-                },
-                ..default()
-            });
-        }
-    }
-}
-
 fn insert_piece_at_position(
     game_piece: GamePiece,
     tile_pos: TilePos,
@@ -534,4 +514,46 @@ fn insert_piece_at_position(
         },
         ..default()
     });
+}
+
+pub fn update_cursor_pos(
+    camera_q: Query<(&GlobalTransform, &Camera)>,
+    mut cursor_moved_events: EventReader<CursorMoved>,
+    mut cursor_pos: ResMut<CursorPos>,
+) {
+    for cursor_moved in cursor_moved_events.read() {
+        // To get the mouse's world position, we have to transform its window position by
+        // any transforms on the camera. This is done by projecting the cursor position into
+        // camera space (world space).
+        for (cam_t, cam) in camera_q.iter() {
+            if let Some(pos) = cam.viewport_to_world_2d(cam_t, cursor_moved.position) {
+                *cursor_pos = CursorPos(pos);
+            }
+        }
+    }
+}
+
+pub fn highlight_tile(
+    cursor_pos: Res<CursorPos>,
+    tilemap_q: Query<(&Transform, &TileStorage)>,
+    mut tile_texture_q: Query<&mut TileTextureIndex>,
+) {
+    let mut cursor_with_offset = cursor_pos.0;
+    for (transform, tile_storage) in &tilemap_q {
+        // Apply the opposite translation that the board has experienced to the cursor position so
+        // the cursor lines up with an untranslated board.
+        cursor_with_offset.x -= transform.translation.x;
+        cursor_with_offset.y -= transform.translation.y;
+
+        // Check if there is a tile at that position
+        if let Some(tile_pos) =
+            TilePos::from_world_pos(&cursor_with_offset, &MAP_SIZE, &SCALED_GRID_SIZE, &MAP_TYPE)
+        {
+            if let Some(tile_id) = tile_storage.get(&tile_pos) {
+                if let Ok(mut tile_texture_index) = tile_texture_q.get_mut(tile_id) {
+                    *tile_texture_index = TileTextureIndex(2);
+                }
+            }
+        }
+    }
 }
