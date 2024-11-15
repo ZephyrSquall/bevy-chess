@@ -58,19 +58,25 @@ fn insert_piece_at_position(
         .get(&tile_pos)
         .expect("All board positions should have a tile entity");
 
-    commands.entity(tile_id).insert(SpriteBundle {
-        texture: asset_server.load(asset_path),
-        transform: Transform {
-            translation: Vec3 {
-                x: center.x,
-                y: center.y,
-                z: 1.0,
+    commands.entity(tile_id).insert((
+        SpriteBundle {
+            texture: asset_server.load(asset_path),
+            transform: Transform {
+                translation: Vec3 {
+                    x: center.x,
+                    y: center.y,
+                    z: 1.0,
+                },
+                scale: Vec3::splat(SCALE),
+                ..default()
             },
-            scale: Vec3::splat(SCALE),
             ..default()
         },
-        ..default()
-    });
+        GamePiece {
+            piece: game_piece.piece,
+            color: game_piece.color,
+        },
+    ));
 }
 
 pub fn setup_pieces(

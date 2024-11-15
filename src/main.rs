@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use system::input::{update_cursor_pos, CursorPos};
 use system::setup::{setup_board, setup_pieces};
-use system::update::{find_mouseover_tile, highlight_tile};
+use system::update::{find_mouseover_tile, highlight_tile, pick_up_piece, SelectedPiece};
 
 mod system;
 
@@ -18,6 +18,7 @@ const SCALED_GRID_SIZE: TilemapGridSize = TilemapGridSize {
     y: GRID_SIZE.y * SCALE,
 };
 
+#[derive(Clone)]
 enum Piece {
     Bishop,
     King,
@@ -27,17 +28,17 @@ enum Piece {
     Rook,
 }
 
+#[derive(Clone)]
 enum Color {
     White,
     Black,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 struct GamePiece {
     piece: Piece,
     color: Color,
 }
-
 impl GamePiece {
     fn get_asset_path(&self) -> &str {
         match (&self.piece, &self.color) {
@@ -66,8 +67,12 @@ fn main() {
     )
     .add_plugins(TilemapPlugin)
     .init_resource::<CursorPos>()
+    .init_resource::<SelectedPiece>()
     .add_systems(Startup, (setup_board, setup_pieces).chain())
     .add_systems(First, update_cursor_pos)
-    .add_systems(Update, (find_mouseover_tile, highlight_tile).chain())
+    .add_systems(
+        Update,
+        (find_mouseover_tile, highlight_tile, pick_up_piece).chain(),
+    )
     .run();
 }

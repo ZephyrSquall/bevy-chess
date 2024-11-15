@@ -1,10 +1,13 @@
 use super::input::CursorPos;
-use crate::{MAP_SIZE, MAP_TYPE, SCALED_GRID_SIZE};
+use crate::{GamePiece, MAP_SIZE, MAP_TYPE, SCALED_GRID_SIZE};
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
 #[derive(Component)]
 pub struct MouseoverHighlight();
+
+#[derive(Resource, Default)]
+pub struct SelectedPiece(Option<GamePiece>);
 
 pub fn find_mouseover_tile(
     mut commands: Commands,
@@ -44,6 +47,21 @@ pub fn highlight_tile(
             *tile_texture_index = TileTextureIndex(2);
         } else {
             *tile_texture_index = TileTextureIndex((tile_pos.x + tile_pos.y) % 2);
+        }
+    }
+}
+
+pub fn pick_up_piece(
+    mut selected_piece: ResMut<SelectedPiece>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut tile_q: Query<(&mut Visibility, Option<&GamePiece>), With<MouseoverHighlight>>,
+) {
+    if mouse.just_pressed(MouseButton::Left) {
+        for (mut visibility, game_piece) in &mut tile_q {
+            if let Some(game_piece) = game_piece {
+                *selected_piece = SelectedPiece(Some(game_piece.clone()));
+                *visibility = Visibility::Hidden;
+            }
         }
     }
 }
