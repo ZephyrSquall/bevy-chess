@@ -33,16 +33,6 @@ struct GamePiece {
     color: Color,
 }
 
-#[derive(Resource)]
-pub struct CursorPos(Vec2);
-impl Default for CursorPos {
-    fn default() -> Self {
-        // Initialize the cursor pos at some far away place. It will get updated
-        // correctly when the cursor moves.
-        Self(Vec2::new(-1000.0, -1000.0))
-    }
-}
-
 impl GamePiece {
     fn get_asset_path(&self) -> &str {
         match (&self.piece, &self.color) {
@@ -62,6 +52,19 @@ impl GamePiece {
     }
 }
 
+#[derive(Component)]
+pub struct MouseoverHighlight();
+
+#[derive(Resource)]
+pub struct CursorPos(Vec2);
+impl Default for CursorPos {
+    fn default() -> Self {
+        // Initialize the cursor pos at some far away place. It will get updated
+        // correctly when the cursor moves.
+        Self(Vec2::new(-1000.0, -1000.0))
+    }
+}
+
 fn main() {
     let mut app = App::new();
     app.add_plugins(
@@ -73,7 +76,7 @@ fn main() {
     .init_resource::<CursorPos>()
     .add_systems(Startup, (setup_board, setup_pieces).chain())
     .add_systems(First, update_cursor_pos)
-    .add_systems(Update, highlight_tile)
+    .add_systems(Update, (find_mouseover_tile, highlight_tile).chain())
     .run();
 }
 
@@ -533,11 +536,18 @@ pub fn update_cursor_pos(
     }
 }
 
-pub fn highlight_tile(
+pub fn find_mouseover_tile(
+    mut commands: Commands,
     cursor_pos: Res<CursorPos>,
     tilemap_q: Query<(&Transform, &TileStorage)>,
-    mut tile_texture_q: Query<&mut TileTextureIndex>,
+    tile_q: Query<Entity, With<MouseoverHighlight>>,
 ) {
+    // Remove MouseoverHighlight component for any tile that has it. It will be re-added to tiles
+    // that still need it later.
+    for tile_id in &tile_q {
+        commands.entity(tile_id).remove::<MouseoverHighlight>();
+    }
+
     let mut cursor_with_offset = cursor_pos.0;
     for (transform, tile_storage) in &tilemap_q {
         // Apply the opposite translation that the board has experienced to the cursor position so
@@ -550,10 +560,20 @@ pub fn highlight_tile(
             TilePos::from_world_pos(&cursor_with_offset, &MAP_SIZE, &SCALED_GRID_SIZE, &MAP_TYPE)
         {
             if let Some(tile_id) = tile_storage.get(&tile_pos) {
-                if let Ok(mut tile_texture_index) = tile_texture_q.get_mut(tile_id) {
-                    *tile_texture_index = TileTextureIndex(2);
-                }
+                commands.entity(tile_id).insert(MouseoverHighlight());
             }
+        }
+    }
+}
+
+pub fn highlight_tile(
+    mut tile_texture_q: Query<(&mut TileTextureIndex, Option<&MouseoverHighlight>, &TilePos)>,
+) {
+    for (mut tile_texture_index, mouseover_highlight, tile_pos) in &mut tile_texture_q {
+        if mouseover_highlight.is_some() {
+            *tile_texture_index = TileTextureIndex(2);
+        } else {
+            *tile_texture_index = TileTextureIndex((tile_pos.x + tile_pos.y) % 2);
         }
     }
 }
