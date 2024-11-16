@@ -1,8 +1,12 @@
+use super::input::CursorPos;
 use crate::{
     Color, GamePiece, Piece, GRID_SIZE, MAP_SIZE, MAP_TYPE, SCALE, SCALED_GRID_SIZE, TILE_SIZE,
 };
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
+
+#[derive(Component)]
+pub struct CursorDisplay;
 
 pub fn setup_board(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
@@ -39,6 +43,25 @@ pub fn setup_board(mut commands: Commands, asset_server: Res<AssetServer>) {
             * Transform::from_scale(Vec3::splat(SCALE)),
         ..Default::default()
     });
+}
+
+pub fn setup_cursor(mut commands: Commands, cursor_pos: Res<CursorPos>) {
+    commands.spawn((
+        CursorDisplay,
+        SpriteBundle {
+            transform: Transform {
+                translation: Vec3 {
+                    x: cursor_pos.0.x,
+                    y: cursor_pos.0.y,
+                    z: 1.0,
+                },
+                scale: Vec3::splat(SCALE),
+                ..default()
+            },
+            visibility: Visibility::Hidden,
+            ..default()
+        },
+    ));
 }
 
 fn insert_piece_at_position(

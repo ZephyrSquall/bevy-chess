@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use system::input::{update_cursor_pos, CursorPos};
-use system::setup::{setup_board, setup_pieces};
-use system::update::{find_mouseover_tile, highlight_tile, pick_up_piece, SelectedPiece};
+use system::setup::{setup_board, setup_cursor, setup_pieces};
+use system::update::{
+    find_mouseover_tile, highlight_tile, pick_up_piece, update_cursor_display, SelectedPiece,
+};
 
 mod system;
 
@@ -69,10 +71,12 @@ fn main() {
     .init_resource::<CursorPos>()
     .init_resource::<SelectedPiece>()
     .add_systems(Startup, (setup_board, setup_pieces).chain())
+    .add_systems(Startup, setup_cursor)
     .add_systems(First, update_cursor_pos)
     .add_systems(
         Update,
         (find_mouseover_tile, highlight_tile, pick_up_piece).chain(),
     )
+    .add_systems(Update, update_cursor_display)
     .run();
 }

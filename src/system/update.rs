@@ -1,4 +1,5 @@
 use super::input::CursorPos;
+use super::setup::CursorDisplay;
 use crate::{GamePiece, MAP_SIZE, MAP_TYPE, SCALED_GRID_SIZE};
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
@@ -54,14 +55,37 @@ pub fn highlight_tile(
 pub fn pick_up_piece(
     mut selected_piece: ResMut<SelectedPiece>,
     mouse: Res<ButtonInput<MouseButton>>,
-    mut tile_q: Query<(&mut Visibility, Option<&GamePiece>), With<MouseoverHighlight>>,
+    // Must include "Without<CursorDisplay>" to create a disjoint query that doesn't mutably access
+    // the "Visibility" component of an entity twice.
+    mut tile_q: Query<
+        (&mut Visibility, Option<&GamePiece>),
+        (With<MouseoverHighlight>, Without<CursorDisplay>),
+    >,
+    mut cursor_q: Query<(&mut Handle<Image>, &mut Visibility), With<CursorDisplay>>,
+    asset_server: Res<AssetServer>,
 ) {
     if mouse.just_pressed(MouseButton::Left) {
         for (mut visibility, game_piece) in &mut tile_q {
             if let Some(game_piece) = game_piece {
                 *selected_piece = SelectedPiece(Some(game_piece.clone()));
                 *visibility = Visibility::Hidden;
+
+                let (mut cursor_handle, mut cursor_visibility) = cursor_q.single_mut();
+                *cursor_handle = asset_server.load(game_piece.get_asset_path().to_string());
+                *cursor_visibility = Visibility::Visible;
             }
         }
     }
+}
+
+pub fn update_cursor_display(
+    cursor_pos: Res<CursorPos>,
+    mut cursor_q: Query<&mut Transform, With<CursorDisplay>>,
+) {
+    let mut transform = cursor_q.single_mut();
+    *transform = transform.with_translation(Vec3 {
+        x: cursor_pos.0.x,
+        y: cursor_pos.0.y,
+        z: 2.0,
+    });
 }
