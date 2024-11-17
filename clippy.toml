@@ -1,0 +1,2 @@
+# Bevy queries tend to form complex types, so be more lenient with type complexity.
+type-complexity-threshold = 300

@@ -54,7 +54,7 @@ pub fn highlight_tile(
 
 pub fn pick_up_piece(
     mut selected_piece: ResMut<SelectedPiece>,
-    mouse: Res<ButtonInput<MouseButton>>,
+    mut mouse: ResMut<ButtonInput<MouseButton>>,
     // Must include "Without<CursorDisplay>" to create a disjoint query that doesn't mutably access
     // the "Visibility" component of an entity twice.
     mut tile_q: Query<
@@ -64,15 +64,35 @@ pub fn pick_up_piece(
     mut cursor_q: Query<(&mut Handle<Image>, &mut Visibility), With<CursorDisplay>>,
     asset_server: Res<AssetServer>,
 ) {
-    if mouse.just_pressed(MouseButton::Left) {
+    if mouse.just_pressed(MouseButton::Left) && selected_piece.0.is_none() {
         for (mut visibility, game_piece) in &mut tile_q {
             if let Some(game_piece) = game_piece {
+                // Get game piece from current tile, and hide it on the tile while it is carried.
                 *selected_piece = SelectedPiece(Some(game_piece.clone()));
                 *visibility = Visibility::Hidden;
 
+                // Display the game piece on the cursor.
                 let (mut cursor_handle, mut cursor_visibility) = cursor_q.single_mut();
                 *cursor_handle = asset_server.load(game_piece.get_asset_path().to_string());
                 *cursor_visibility = Visibility::Visible;
+
+                mouse.clear_just_pressed(MouseButton::Left);
+            }
+        }
+    }
+}
+
+pub fn put_down_piece(
+    selected_piece: Res<SelectedPiece>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut tile_q: Query<(&mut Handle<Image>, &mut Visibility), With<MouseoverHighlight>>,
+    asset_server: Res<AssetServer>,
+) {
+    if mouse.just_pressed(MouseButton::Left) {
+        if let Some(selected_piece) = &selected_piece.0 {
+            for (mut handle, mut visibility) in &mut tile_q {
+                *handle = asset_server.load(selected_piece.get_asset_path().to_string());
+                *visibility = Visibility::Visible;
             }
         }
     }
