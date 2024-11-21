@@ -1,2 +1,5 @@
+# Bevy queries tend to have a lot of arguments, so be more lenient with argument number.
+too-many-arguments-threshold = 9
+
 # Bevy queries tend to form complex types, so be more lenient with type complexity.
 type-complexity-threshold = 350

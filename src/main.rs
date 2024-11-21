@@ -3,8 +3,8 @@ use bevy_ecs_tilemap::prelude::*;
 use system::input::{update_cursor_pos, CursorPos};
 use system::setup::{setup_board, setup_cursor, setup_pieces};
 use system::update::{
-    find_mouseover_tile, highlight_tile, pick_up_piece, put_down_piece, update_cursor_display,
-    SelectedPiece, SelectedPieceOriginalTile,
+    find_mouseover_tile, highlight_tile, pick_up_piece, put_down_piece, recalculate_legal_moves,
+    update_cursor_display, MustRecalculateLegalMoves, SelectedPiece, SelectedPieceOriginalTile,
 };
 
 mod system;
@@ -31,7 +31,7 @@ enum Piece {
     Rook,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 enum Color {
     White,
     Black,
@@ -61,6 +61,22 @@ impl GamePiece {
     }
 }
 
+#[derive(Resource)]
+struct ColorToMove(Color);
+impl Default for ColorToMove {
+    fn default() -> Self {
+        ColorToMove(Color::White)
+    }
+}
+impl ColorToMove {
+    fn switch(&mut self) {
+        match self {
+            ColorToMove(Color::White) => self.0 = Color::Black,
+            ColorToMove(Color::Black) => self.0 = Color::White,
+        }
+    }
+}
+
 fn main() {
     let mut app = App::new();
     app.add_plugins(
@@ -72,6 +88,8 @@ fn main() {
     .init_resource::<CursorPos>()
     .init_resource::<SelectedPiece>()
     .init_resource::<SelectedPieceOriginalTile>()
+    .init_resource::<ColorToMove>()
+    .init_resource::<MustRecalculateLegalMoves>()
     .add_systems(Startup, (setup_board, setup_pieces).chain())
     .add_systems(Startup, setup_cursor)
     .add_systems(First, update_cursor_pos)
@@ -79,9 +97,10 @@ fn main() {
         Update,
         (
             find_mouseover_tile,
-            highlight_tile,
             pick_up_piece,
             put_down_piece,
+            recalculate_legal_moves,
+            highlight_tile,
         )
             .chain(),
     )
