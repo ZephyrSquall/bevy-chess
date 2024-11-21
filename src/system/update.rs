@@ -1,4 +1,4 @@
-use crate::components::{CursorDisplay, GamePiece, LegalMoves, MouseoverHighlight};
+use crate::components::{Color, CursorDisplay, GamePiece, LegalMoves, MouseoverHighlight, Piece};
 use crate::resources::{
     ColorToMove, CursorPos, MustRecalculateLegalMoves, SelectedPiece, SelectedPieceOriginalTile,
 };
@@ -121,12 +121,27 @@ pub fn recalculate_legal_moves(
     mut must_recalculate_legal_moves: ResMut<MustRecalculateLegalMoves>,
     tile_legal_moves_q: Query<Entity, With<LegalMoves>>,
     tile_game_piece_q: Query<(Entity, &GamePiece, &TilePos)>,
+    tilemap_q: Query<&TileStorage>,
 ) {
     if must_recalculate_legal_moves.0 {
         // Remove legal moves from all existing tiles.
         for tile_id in &tile_legal_moves_q {
             commands.entity(tile_id).remove::<LegalMoves>();
         }
+
+        let tilemap = tilemap_q.single();
+
+        // A closure that returns the color of the game piece on the specified square, or None if
+        // there is no game piece on that square.
+        let get_game_piece_color_at_position = |tile_pos: &TilePos| {
+            let adjacent_tile_id = tilemap.get(tile_pos).expect("Tile should exist in tilemap");
+
+            if let Ok((_, other_game_piece, _)) = &tile_game_piece_q.get(adjacent_tile_id) {
+                Some(other_game_piece.color)
+            } else {
+                None
+            }
+        };
 
         for (tile_id, game_piece, tile_pos) in &tile_game_piece_q {
             if game_piece.color == color_to_move.0 {
@@ -135,22 +150,348 @@ pub fn recalculate_legal_moves(
                 // directions, where it can move 7 spaces vertically, 7 spaces horizontally, 7
                 // spaces along the long diagonal, and 6 spaces along the short diagonal.
                 let mut legal_moves = Vec::with_capacity(27);
-                // Placeholder legal moves to test tile highlighting.
-                // TODO: Actually calculate legal moves.
-                legal_moves.push(TilePos {
-                    x: tile_pos.x,
-                    y: tile_pos.y + 1,
-                });
-                legal_moves.push(TilePos {
-                    x: tile_pos.x,
-                    y: tile_pos.y + 2,
-                });
+
+                match game_piece.piece {
+                    Piece::Pawn => {
+                        // TODO: Handle pawn movement.
+                    }
+                    Piece::Rook => {
+                        find_legal_moves_in_direction(
+                            Direction { x: 0, y: 1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: 0 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 0, y: -1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: 0 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                    }
+                    Piece::Knight => {
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: 2 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 2, y: 1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 2, y: -1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: -2 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: -2 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -2, y: -1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -2, y: 1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: 2 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                    }
+                    Piece::Bishop => {
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: 1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: -1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: -1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: 1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                    }
+                    Piece::Queen => {
+                        find_legal_moves_in_direction(
+                            Direction { x: 0, y: 1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: 1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: 0 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: -1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 0, y: -1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: -1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: 0 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: 1 },
+                            true,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                    }
+                    Piece::King => {
+                        find_legal_moves_in_direction(
+                            Direction { x: 0, y: 1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: 1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: 0 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 1, y: -1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: 0, y: -1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: -1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: 0 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        find_legal_moves_in_direction(
+                            Direction { x: -1, y: 1 },
+                            false,
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        // TODO: Handle castling.
+                    }
+                }
+
+                // TODO: Remove legal moves that would leave one's own king under attack.
 
                 commands.entity(tile_id).insert(LegalMoves(legal_moves));
             }
         }
 
         *must_recalculate_legal_moves = MustRecalculateLegalMoves(false);
+    }
+}
+
+struct Direction {
+    x: i32,
+    y: i32,
+}
+
+fn find_legal_moves_in_direction<F: Fn(&TilePos) -> Option<Color>>(
+    direction: Direction,
+    keep_going: bool,
+    legal_moves: &mut Vec<TilePos>,
+    position: &TilePos,
+    color_to_move: &Color,
+    get_game_piece_color_at_position: F,
+) {
+    // Use checked_add_signed() to make sure overflow doesn't occur from going below position 0
+    if let Some(x_next) = position.x.checked_add_signed(direction.x) {
+        if let Some(y_next) = position.y.checked_add_signed(direction.y) {
+            // If code reaches this point, no overflow occurred, so only need to check if the new
+            // position isn't past the eighth row or column.
+            if x_next < MAP_SIZE.x && y_next < MAP_SIZE.y {
+                match get_game_piece_color_at_position(&TilePos {
+                    x: x_next,
+                    y: y_next,
+                }) {
+                    // If there is no piece at the new position, add the position to the list of
+                    // legal moves. If keep_going is true, repeat the search from the new position.
+                    None => {
+                        legal_moves.push(TilePos {
+                            x: x_next,
+                            y: y_next,
+                        });
+                        if keep_going {
+                            find_legal_moves_in_direction(
+                                direction,
+                                true,
+                                legal_moves,
+                                &TilePos {
+                                    x: x_next,
+                                    y: y_next,
+                                },
+                                color_to_move,
+                                get_game_piece_color_at_position,
+                            );
+                        }
+                    }
+                    // If there is a piece at the new position, add the position to the list of
+                    // legal moves only if the piece is of the opposite color (representing a
+                    // capture). Either way, do not continue the search since pieces block movement.
+                    Some(color) => {
+                        if color != *color_to_move {
+                            legal_moves.push(TilePos {
+                                x: x_next,
+                                y: y_next,
+                            });
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

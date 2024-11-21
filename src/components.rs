@@ -11,7 +11,7 @@ pub enum Piece {
     Rook,
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Color {
     White,
     Black,
