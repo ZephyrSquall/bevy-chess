@@ -1,14 +1,5 @@
+use crate::resources::CursorPos;
 use bevy::prelude::*;
-
-#[derive(Resource)]
-pub struct CursorPos(pub Vec2);
-impl Default for CursorPos {
-    fn default() -> Self {
-        // Initialize the cursor pos at some far away place. It will get updated
-        // correctly when the cursor moves.
-        Self(Vec2::new(-1000.0, -1000.0))
-    }
-}
 
 pub fn update_cursor_pos(
     camera_q: Query<(&GlobalTransform, &Camera)>,

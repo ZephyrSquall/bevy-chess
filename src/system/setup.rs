@@ -1,12 +1,8 @@
-use super::input::CursorPos;
-use crate::{
-    Color, GamePiece, Piece, GRID_SIZE, MAP_SIZE, MAP_TYPE, SCALE, SCALED_GRID_SIZE, TILE_SIZE,
-};
+use crate::components::{Color, CursorDisplay, GamePiece, Piece};
+use crate::resources::CursorPos;
+use crate::{GRID_SIZE, MAP_SIZE, MAP_TYPE, SCALE, SCALED_GRID_SIZE, TILE_SIZE};
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-
-#[derive(Component)]
-pub struct CursorDisplay;
 
 pub fn setup_board(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());

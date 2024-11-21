@@ -1,12 +1,17 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use system::input::{update_cursor_pos, CursorPos};
+use resources::{
+    ColorToMove, CursorPos, MustRecalculateLegalMoves, SelectedPiece, SelectedPieceOriginalTile,
+};
+use system::input::update_cursor_pos;
 use system::setup::{setup_board, setup_cursor, setup_pieces};
 use system::update::{
     find_mouseover_tile, highlight_tile, pick_up_piece, put_down_piece, recalculate_legal_moves,
-    update_cursor_display, MustRecalculateLegalMoves, SelectedPiece, SelectedPieceOriginalTile,
+    update_cursor_display,
 };
 
+mod components;
+mod resources;
 mod system;
 
 const MAP_SIZE: TilemapSize = TilemapSize { x: 8, y: 8 };
@@ -20,62 +25,6 @@ const SCALED_GRID_SIZE: TilemapGridSize = TilemapGridSize {
     x: GRID_SIZE.x * SCALE,
     y: GRID_SIZE.y * SCALE,
 };
-
-#[derive(Clone)]
-enum Piece {
-    Bishop,
-    King,
-    Knight,
-    Pawn,
-    Queen,
-    Rook,
-}
-
-#[derive(Clone, PartialEq, Eq)]
-enum Color {
-    White,
-    Black,
-}
-
-#[derive(Component, Clone)]
-struct GamePiece {
-    piece: Piece,
-    color: Color,
-}
-impl GamePiece {
-    fn get_asset_path(&self) -> &str {
-        match (&self.piece, &self.color) {
-            (Piece::Bishop, Color::White) => "pieces/bishop_white.png",
-            (Piece::King, Color::White) => "pieces/king_white.png",
-            (Piece::Knight, Color::White) => "pieces/knight_white.png",
-            (Piece::Pawn, Color::White) => "pieces/pawn_white.png",
-            (Piece::Queen, Color::White) => "pieces/queen_white.png",
-            (Piece::Rook, Color::White) => "pieces/rook_white.png",
-            (Piece::Bishop, Color::Black) => "pieces/bishop_black.png",
-            (Piece::King, Color::Black) => "pieces/king_black.png",
-            (Piece::Knight, Color::Black) => "pieces/knight_black.png",
-            (Piece::Pawn, Color::Black) => "pieces/pawn_black.png",
-            (Piece::Queen, Color::Black) => "pieces/queen_black.png",
-            (Piece::Rook, Color::Black) => "pieces/rook_black.png",
-        }
-    }
-}
-
-#[derive(Resource)]
-struct ColorToMove(Color);
-impl Default for ColorToMove {
-    fn default() -> Self {
-        ColorToMove(Color::White)
-    }
-}
-impl ColorToMove {
-    fn switch(&mut self) {
-        match self {
-            ColorToMove(Color::White) => self.0 = Color::Black,
-            ColorToMove(Color::Black) => self.0 = Color::White,
-        }
-    }
-}
 
 fn main() {
     let mut app = App::new();

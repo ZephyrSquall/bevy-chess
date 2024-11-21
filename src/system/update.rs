@@ -1,28 +1,10 @@
-use super::input::CursorPos;
-use super::setup::CursorDisplay;
-use crate::{ColorToMove, GamePiece, MAP_SIZE, MAP_TYPE, SCALED_GRID_SIZE};
+use crate::components::{CursorDisplay, GamePiece, LegalMoves, MouseoverHighlight};
+use crate::resources::{
+    ColorToMove, CursorPos, MustRecalculateLegalMoves, SelectedPiece, SelectedPieceOriginalTile,
+};
+use crate::{MAP_SIZE, MAP_TYPE, SCALED_GRID_SIZE};
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-
-#[derive(Component)]
-pub struct MouseoverHighlight();
-
-#[derive(Component)]
-pub struct LegalMoves(Vec<TilePos>);
-
-#[derive(Resource, Default)]
-pub struct SelectedPiece(Option<GamePiece>);
-
-#[derive(Resource, Default)]
-pub struct SelectedPieceOriginalTile(Option<Entity>);
-
-#[derive(Resource)]
-pub struct MustRecalculateLegalMoves(bool);
-impl Default for MustRecalculateLegalMoves {
-    fn default() -> Self {
-        MustRecalculateLegalMoves(true)
-    }
-}
 
 pub fn find_mouseover_tile(
     mut commands: Commands,
