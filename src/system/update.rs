@@ -85,31 +85,36 @@ pub fn put_down_piece(
     asset_server: Res<AssetServer>,
 ) {
     if mouse.just_pressed(MouseButton::Left) {
+        // Get the currently-selected piece, or skip if no piece is selected.
         if let Some(selected_piece_some) = &selected_piece.0 {
+            // Get the original tile of the currently-selected piece (this shouldn't be None if
+            // there is a selected piece).
             if let Some(selected_piece_original_tile_some) = &selected_piece_original_tile.0 {
-                // Remove the GamePiece on the original tile (do this before adding the GamePiece
-                // from the cursor in case it's on the same tile).
-                commands
-                    .entity(*selected_piece_original_tile_some)
-                    .remove::<GamePiece>();
+                // Get the current mouseover tile, or skip if the cursor is not over a tile.
+                if let Ok((tile_id, mut handle, mut visibility)) = tile_q.get_single_mut() {
+                    // Remove the GamePiece on the original tile (do this before adding the GamePiece
+                    // from the cursor in case it's on the same tile).
+                    commands
+                        .entity(*selected_piece_original_tile_some)
+                        .remove::<GamePiece>();
 
-                // Add the GamePiece on the tile that the cursor is currently hovering over.
-                let (tile_id, mut handle, mut visibility) = tile_q.single_mut();
-                commands.entity(tile_id).insert(selected_piece_some.clone());
-                *handle = asset_server.load(selected_piece_some.get_asset_path().to_string());
-                *visibility = Visibility::Visible;
+                    // Add the GamePiece on the tile that the cursor is currently hovering over.
+                    commands.entity(tile_id).insert(selected_piece_some.clone());
+                    *handle = asset_server.load(selected_piece_some.get_asset_path().to_string());
+                    *visibility = Visibility::Visible;
 
-                // Remove the game piece sprite from the cursor.
-                let mut cursor_visibility = cursor_q.single_mut();
-                *cursor_visibility = Visibility::Hidden;
+                    // Remove the game piece sprite from the cursor.
+                    let mut cursor_visibility = cursor_q.single_mut();
+                    *cursor_visibility = Visibility::Hidden;
 
-                // Reset the cursor.
-                *selected_piece = SelectedPiece(None);
-                *selected_piece_original_tile = SelectedPieceOriginalTile(None);
+                    // Reset the cursor.
+                    *selected_piece = SelectedPiece(None);
+                    *selected_piece_original_tile = SelectedPieceOriginalTile(None);
 
-                // Prepare to calculate the next legal moves.
-                color_to_move.switch();
-                *must_recalculate_legal_moves = MustRecalculateLegalMoves(true);
+                    // Prepare to calculate the next legal moves.
+                    color_to_move.switch();
+                    *must_recalculate_legal_moves = MustRecalculateLegalMoves(true);
+                }
             }
         }
     }
