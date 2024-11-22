@@ -158,7 +158,14 @@ pub fn recalculate_legal_moves(
 
                 match game_piece.piece {
                     Piece::Pawn => {
-                        // TODO: Handle pawn movement.
+                        find_legal_pawn_moves(
+                            &mut legal_moves,
+                            tile_pos,
+                            &color_to_move.0,
+                            get_game_piece_color_at_position,
+                        );
+                        // TODO: Handle promotion.
+                        // TODO: Handle en passant.
                     }
                     Piece::Rook => {
                         find_legal_moves_in_direction(
@@ -442,6 +449,96 @@ pub fn recalculate_legal_moves(
 struct Direction {
     x: i32,
     y: i32,
+}
+
+fn find_legal_pawn_moves<F: Fn(&TilePos) -> Option<Color>>(
+    legal_moves: &mut Vec<TilePos>,
+    position: &TilePos,
+    color_to_move: &Color,
+    get_game_piece_color_at_position: F,
+) {
+    let y_direction = if *color_to_move == Color::White {
+        1
+    } else {
+        -1
+    };
+
+    // Check the square immediately in front.
+    // Use checked_add_signed() to make sure overflow doesn't occur from going below position 0
+    // TODO: Once promotion is implemented, checking that the pawn isn't on the final rank will be
+    // unnecessary.
+    if let Some(y_next) = position.y.checked_add_signed(y_direction) {
+        if y_next < MAP_SIZE.y
+            && get_game_piece_color_at_position(&TilePos {
+                x: position.x,
+                y: y_next,
+            })
+            .is_none()
+        {
+            legal_moves.push(TilePos {
+                x: position.x,
+                y: y_next,
+            });
+            // If the pawn could move forward one square, check if it can also move two squares
+            // (it's on its starting rank and the next square is also free).
+            if (*color_to_move == Color::White && position.y == 1)
+                || (*color_to_move == Color::Black && position.y == 6)
+            {
+                // If a pawn is making a double move from its starting square, it's not possible for
+                // its end position to be off the board, so checking for this isn't necessary.
+                let y_next_next = y_next.wrapping_add_signed(y_direction);
+                if get_game_piece_color_at_position(&TilePos {
+                    x: position.x,
+                    y: y_next_next,
+                })
+                .is_none()
+                {
+                    legal_moves.push(TilePos {
+                        x: position.x,
+                        y: y_next_next,
+                    });
+                }
+            }
+        }
+    }
+
+    // Check captures to both diagonals.
+    // TODO: Once promotion is implemented, checking that the pawn isn't on the final rank will be
+    // unnecessary.
+    if let Some(x_next) = position.x.checked_add_signed(-1) {
+        if let Some(y_next) = position.y.checked_add_signed(y_direction) {
+            if y_next < MAP_SIZE.y
+                && get_game_piece_color_at_position(&TilePos {
+                    x: x_next,
+                    y: y_next,
+                })
+                .is_some_and(|color| color != *color_to_move)
+            {
+                legal_moves.push(TilePos {
+                    x: x_next,
+                    y: y_next,
+                });
+            }
+        }
+    }
+    // TODO: Once promotion is implemented, checking that the pawn isn't on the final rank will be
+    // unnecessary.
+    let x_next = position.x + 1;
+    if let Some(y_next) = position.y.checked_add_signed(y_direction) {
+        if x_next < MAP_SIZE.x
+            && y_next < MAP_SIZE.y
+            && get_game_piece_color_at_position(&TilePos {
+                x: x_next,
+                y: y_next,
+            })
+            .is_some_and(|color| color != *color_to_move)
+        {
+            legal_moves.push(TilePos {
+                x: x_next,
+                y: y_next,
+            });
+        }
+    }
 }
 
 fn find_legal_moves_in_direction<F: Fn(&TilePos) -> Option<Color>>(
