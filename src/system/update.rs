@@ -53,7 +53,7 @@ pub fn pick_up_piece(
         for (tile_id, mut visibility, game_piece) in &mut tile_q {
             if let Some(game_piece) = game_piece {
                 // Get game piece from current tile, and hide it on the tile while it is carried.
-                *selected_piece = SelectedPiece(Some(game_piece.clone()));
+                *selected_piece = SelectedPiece(Some(*game_piece));
                 *visibility = Visibility::Hidden;
 
                 // Display the game piece on the cursor.
@@ -99,7 +99,7 @@ pub fn put_down_piece(
                         .remove::<GamePiece>();
 
                     // Add the GamePiece on the tile that the cursor is currently hovering over.
-                    commands.entity(tile_id).insert(selected_piece_some.clone());
+                    commands.entity(tile_id).insert(*selected_piece_some);
                     *handle = asset_server.load(selected_piece_some.get_asset_path().to_string());
                     *visibility = Visibility::Visible;
 
@@ -136,17 +136,31 @@ pub fn recalculate_legal_moves(
 
         let tilemap = tilemap_q.single();
 
-        // A closure that returns the color of the game piece on the specified square, or None if
-        // there is no game piece on that square.
-        let get_game_piece_color_at_position = |tile_pos: &TilePos| {
+        // A closure that returns the game piece on the specified square, or None if there is no
+        // game piece on that square.
+        let get_game_piece_at_position = |tile_pos: &TilePos| {
             let adjacent_tile_id = tilemap.get(tile_pos).expect("Tile should exist in tilemap");
 
-            if let Ok((_, other_game_piece, _)) = &tile_game_piece_q.get(adjacent_tile_id) {
-                Some(other_game_piece.color)
+            if let Ok((_, other_game_piece, _)) = tile_game_piece_q.get(adjacent_tile_id) {
+                Some(*other_game_piece)
             } else {
                 None
             }
         };
+
+        // Get the tile the king is currently on.
+        let mut king_tile = None;
+        for (_, game_piece, tile_pos) in &tile_game_piece_q {
+            if *game_piece
+                == (GamePiece {
+                    piece: Piece::King,
+                    color: color_to_move.0,
+                })
+            {
+                king_tile = Some(tile_pos);
+                break;
+            }
+        }
 
         for (tile_id, game_piece, tile_pos) in &tile_game_piece_q {
             if game_piece.color == color_to_move.0 {
@@ -162,7 +176,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         // TODO: Handle promotion.
                         // TODO: Handle en passant.
@@ -174,7 +188,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 1, y: 0 },
@@ -182,7 +196,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 0, y: -1 },
@@ -190,7 +204,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: 0 },
@@ -198,7 +212,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                     }
                     Piece::Knight => {
@@ -208,7 +222,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 2, y: 1 },
@@ -216,7 +230,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 2, y: -1 },
@@ -224,7 +238,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 1, y: -2 },
@@ -232,7 +246,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: -2 },
@@ -240,7 +254,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -2, y: -1 },
@@ -248,7 +262,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -2, y: 1 },
@@ -256,7 +270,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: 2 },
@@ -264,7 +278,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                     }
                     Piece::Bishop => {
@@ -274,7 +288,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 1, y: -1 },
@@ -282,7 +296,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: -1 },
@@ -290,7 +304,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: 1 },
@@ -298,7 +312,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                     }
                     Piece::Queen => {
@@ -308,7 +322,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 1, y: 1 },
@@ -316,7 +330,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 1, y: 0 },
@@ -324,7 +338,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 1, y: -1 },
@@ -332,7 +346,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 0, y: -1 },
@@ -340,7 +354,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: -1 },
@@ -348,7 +362,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: 0 },
@@ -356,7 +370,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: 1 },
@@ -364,7 +378,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                     }
                     Piece::King => {
@@ -374,7 +388,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 1, y: 1 },
@@ -382,7 +396,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 1, y: 0 },
@@ -390,7 +404,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 1, y: -1 },
@@ -398,7 +412,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: 0, y: -1 },
@@ -406,7 +420,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: -1 },
@@ -414,7 +428,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: 0 },
@@ -422,7 +436,7 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         find_legal_moves_in_direction(
                             Direction { x: -1, y: 1 },
@@ -430,13 +444,25 @@ pub fn recalculate_legal_moves(
                             &mut legal_moves,
                             tile_pos,
                             &color_to_move.0,
-                            get_game_piece_color_at_position,
+                            get_game_piece_at_position,
                         );
                         // TODO: Handle castling.
                     }
                 }
 
-                // TODO: Remove legal moves that would leave one's own king under attack.
+                // Remove legal moves that would leave one's own king under attack. As a failsafe,
+                // skip this process if the king wasn't found on the board.
+                if let Some(king_tile) = king_tile {
+                    legal_moves.retain(|legal_move| {
+                        !is_king_threatened_after_move(
+                            tile_pos,
+                            legal_move,
+                            king_tile,
+                            &color_to_move.0,
+                            get_game_piece_at_position,
+                        )
+                    });
+                }
 
                 commands.entity(tile_id).insert(LegalMoves(legal_moves));
             }
@@ -451,11 +477,11 @@ struct Direction {
     y: i32,
 }
 
-fn find_legal_pawn_moves<F: Fn(&TilePos) -> Option<Color>>(
+fn find_legal_pawn_moves<F: Fn(&TilePos) -> Option<GamePiece>>(
     legal_moves: &mut Vec<TilePos>,
     position: &TilePos,
     color_to_move: &Color,
-    get_game_piece_color_at_position: F,
+    get_game_piece_at_position: F,
 ) {
     let y_direction = if *color_to_move == Color::White {
         1
@@ -469,7 +495,7 @@ fn find_legal_pawn_moves<F: Fn(&TilePos) -> Option<Color>>(
     // unnecessary.
     if let Some(y_next) = position.y.checked_add_signed(y_direction) {
         if y_next < MAP_SIZE.y
-            && get_game_piece_color_at_position(&TilePos {
+            && get_game_piece_at_position(&TilePos {
                 x: position.x,
                 y: y_next,
             })
@@ -487,7 +513,7 @@ fn find_legal_pawn_moves<F: Fn(&TilePos) -> Option<Color>>(
                 // If a pawn is making a double move from its starting square, it's not possible for
                 // its end position to be off the board, so checking for this isn't necessary.
                 let y_next_next = y_next.wrapping_add_signed(y_direction);
-                if get_game_piece_color_at_position(&TilePos {
+                if get_game_piece_at_position(&TilePos {
                     x: position.x,
                     y: y_next_next,
                 })
@@ -505,20 +531,22 @@ fn find_legal_pawn_moves<F: Fn(&TilePos) -> Option<Color>>(
     // Check captures to both diagonals.
     // TODO: Once promotion is implemented, checking that the pawn isn't on the final rank will be
     // unnecessary.
-    if let Some(x_next) = position.x.checked_add_signed(-1) {
-        if let Some(y_next) = position.y.checked_add_signed(y_direction) {
-            if y_next < MAP_SIZE.y
-                && get_game_piece_color_at_position(&TilePos {
-                    x: x_next,
-                    y: y_next,
-                })
-                .is_some_and(|color| color != *color_to_move)
-            {
-                legal_moves.push(TilePos {
-                    x: x_next,
-                    y: y_next,
-                });
-            }
+    if let Some((x_next, y_next)) = position
+        .x
+        .checked_add_signed(-1)
+        .zip(position.y.checked_add_signed(y_direction))
+    {
+        if y_next < MAP_SIZE.y
+            && get_game_piece_at_position(&TilePos {
+                x: x_next,
+                y: y_next,
+            })
+            .is_some_and(|game_piece| game_piece.color != *color_to_move)
+        {
+            legal_moves.push(TilePos {
+                x: x_next,
+                y: y_next,
+            });
         }
     }
     // TODO: Once promotion is implemented, checking that the pawn isn't on the final rank will be
@@ -527,11 +555,11 @@ fn find_legal_pawn_moves<F: Fn(&TilePos) -> Option<Color>>(
     if let Some(y_next) = position.y.checked_add_signed(y_direction) {
         if x_next < MAP_SIZE.x
             && y_next < MAP_SIZE.y
-            && get_game_piece_color_at_position(&TilePos {
+            && get_game_piece_at_position(&TilePos {
                 x: x_next,
                 y: y_next,
             })
-            .is_some_and(|color| color != *color_to_move)
+            .is_some_and(|game_piece| game_piece.color != *color_to_move)
         {
             legal_moves.push(TilePos {
                 x: x_next,
@@ -541,60 +569,351 @@ fn find_legal_pawn_moves<F: Fn(&TilePos) -> Option<Color>>(
     }
 }
 
-fn find_legal_moves_in_direction<F: Fn(&TilePos) -> Option<Color>>(
+fn find_legal_moves_in_direction<F: Fn(&TilePos) -> Option<GamePiece>>(
     direction: Direction,
     keep_going: bool,
     legal_moves: &mut Vec<TilePos>,
     position: &TilePos,
     color_to_move: &Color,
-    get_game_piece_color_at_position: F,
+    get_game_piece_at_position: F,
 ) {
     // Use checked_add_signed() to make sure overflow doesn't occur from going below position 0
-    if let Some(x_next) = position.x.checked_add_signed(direction.x) {
-        if let Some(y_next) = position.y.checked_add_signed(direction.y) {
-            // If code reaches this point, no overflow occurred, so only need to check if the new
-            // position isn't past the eighth row or column.
-            if x_next < MAP_SIZE.x && y_next < MAP_SIZE.y {
-                match get_game_piece_color_at_position(&TilePos {
-                    x: x_next,
-                    y: y_next,
-                }) {
-                    // If there is no piece at the new position, add the position to the list of
-                    // legal moves. If keep_going is true, repeat the search from the new position.
-                    None => {
+    if let Some((x_next, y_next)) = position
+        .x
+        .checked_add_signed(direction.x)
+        .zip(position.y.checked_add_signed(direction.y))
+    {
+        // If code reaches this point, no overflow occurred, so only need to check if the new
+        // position isn't past the eighth row or column.
+        if x_next < MAP_SIZE.x && y_next < MAP_SIZE.y {
+            match get_game_piece_at_position(&TilePos {
+                x: x_next,
+                y: y_next,
+            }) {
+                // If there is no piece at the new position, add the position to the list of
+                // legal moves. If keep_going is true, repeat the search from the new position.
+                None => {
+                    legal_moves.push(TilePos {
+                        x: x_next,
+                        y: y_next,
+                    });
+                    if keep_going {
+                        find_legal_moves_in_direction(
+                            direction,
+                            true,
+                            legal_moves,
+                            &TilePos {
+                                x: x_next,
+                                y: y_next,
+                            },
+                            color_to_move,
+                            get_game_piece_at_position,
+                        );
+                    }
+                }
+                // If there is a piece at the new position, add the position to the list of
+                // legal moves only if the piece is of the opposite color (representing a
+                // capture). Either way, do not continue the search since pieces block movement.
+                Some(game_piece) => {
+                    if game_piece.color != *color_to_move {
                         legal_moves.push(TilePos {
                             x: x_next,
                             y: y_next,
                         });
-                        if keep_going {
-                            find_legal_moves_in_direction(
-                                direction,
-                                true,
-                                legal_moves,
-                                &TilePos {
-                                    x: x_next,
-                                    y: y_next,
-                                },
-                                color_to_move,
-                                get_game_piece_color_at_position,
-                            );
-                        }
-                    }
-                    // If there is a piece at the new position, add the position to the list of
-                    // legal moves only if the piece is of the opposite color (representing a
-                    // capture). Either way, do not continue the search since pieces block movement.
-                    Some(color) => {
-                        if color != *color_to_move {
-                            legal_moves.push(TilePos {
-                                x: x_next,
-                                y: y_next,
-                            });
-                        }
                     }
                 }
             }
         }
     }
+}
+
+// Checks if, after moving the piece from the starting tile to the end tile, if the king would be
+// under attack by an enemy piece.
+fn is_king_threatened_after_move<'a, F: Fn(&TilePos) -> Option<GamePiece>>(
+    starting_tile: &TilePos,
+    end_tile: &'a TilePos,
+    mut king_tile: &'a TilePos,
+    color_to_move: &Color,
+    get_game_piece_at_position: F,
+) -> bool {
+    // If the starting tile and king tile match, that means the king was moved, so update the king
+    // position before proceeding further.
+    if starting_tile == king_tile {
+        king_tile = end_tile;
+    }
+
+    let opposite_color = if *color_to_move == Color::White {
+        Color::Black
+    } else {
+        Color::White
+    };
+
+    #[derive(PartialEq, Eq)]
+    struct GamePieceInDirectionResult {
+        game_piece: GamePiece,
+        is_adjacent: bool,
+    }
+
+    // Determines where the next game piece in the given direction is, taking into account that
+    // after the legal move is played, a piece of the same color as the king has been moved from the
+    // starting tile to the end tile. Returns an option with None if no piece was found in that
+    // direction (or if the end tile was found in that direction which can never contain an
+    // attacking piece), or a tuple containing the game piece in that direction and a boolean
+    // indicating if it's immediately adjacent.
+    let get_game_piece_in_direction = |direction: Direction| {
+        let mut x = king_tile.x;
+        let mut y = king_tile.y;
+        let mut is_adjacent = true;
+
+        while let Some((x_next, y_next)) = x
+            .checked_add_signed(direction.x)
+            .zip(y.checked_add_signed(direction.y))
+        {
+            if x_next < MAP_SIZE.x && y_next < MAP_SIZE.y {
+                // The next position is on the board, so check what's at that position.
+                let next_tile = TilePos {
+                    x: x_next,
+                    y: y_next,
+                };
+
+                // If the position is the end tile, this is the position another piece of the same
+                // color was moved to, which will block whatever's in this direction. Though the
+                // piece is unknown, all that matters is that it can't possibly be threatening the
+                // king, so return None to indicate this.
+                if next_tile == *end_tile {
+                    return None;
+                }
+
+                // If the position is the start tile, this is the position another piece of the same
+                // color was moved from. This piece should be ignored for the sake of determining if
+                // the king is threatened from this direction.
+                if next_tile != *starting_tile {
+                    // This position isn't the starting or ending position, so check if there's a
+                    // piece here, and if so, return it.
+                    if let Some(game_piece_at_position) = get_game_piece_at_position(&next_tile) {
+                        return Some(GamePieceInDirectionResult {
+                            game_piece: game_piece_at_position,
+                            is_adjacent,
+                        });
+                    }
+                }
+
+                // At this point, nothing was found on this tile, so update the position and proceed
+                // to the next loop iteration.
+                x = x_next;
+                y = y_next;
+                is_adjacent = false;
+            } else {
+                // x_next or y_next were greater than the board size, so stop looping because the
+                // edge of the board has been reached.
+                return None;
+            }
+        }
+        // If the loop is broken before hitting a return statement, that means an overflow occurred
+        // with one of the checked additions, which means the position tried to go past the first
+        // row or column. As this is the edge of the board, this means there are no pieces in this
+        // direction, so return None.
+        None
+    };
+
+    // Check horizontally and vertically for a rook, queen, or immediately adjacent king of the
+    // opposite color. Stop searching in a direction if any other piece is found, the end tile is
+    // reached (as this means a piece of the same color is being moved there which will block attack
+    // from that direction), or the end of the board is reached.
+    let is_threatened_horizontally_or_vertically =
+        |game_piece_in_direction_result: GamePieceInDirectionResult| {
+            game_piece_in_direction_result.game_piece
+                == GamePiece {
+                    piece: Piece::Rook,
+                    color: opposite_color,
+                }
+                || game_piece_in_direction_result.game_piece
+                    == GamePiece {
+                        piece: Piece::Queen,
+                        color: opposite_color,
+                    }
+                || game_piece_in_direction_result
+                    == GamePieceInDirectionResult {
+                        game_piece: GamePiece {
+                            piece: Piece::King,
+                            color: opposite_color,
+                        },
+                        is_adjacent: true,
+                    }
+        };
+
+    // Check diagonally for a bishop, queen, or immediately adjacent king. If white, also check
+    // upwards diagonals for an immediately adjacent pawn.
+    let is_threatened_diagonally_upwards =
+        |game_piece_in_direction_result: GamePieceInDirectionResult| {
+            game_piece_in_direction_result.game_piece
+                == GamePiece {
+                    piece: Piece::Bishop,
+                    color: opposite_color,
+                }
+                || game_piece_in_direction_result.game_piece
+                    == GamePiece {
+                        piece: Piece::Queen,
+                        color: opposite_color,
+                    }
+                || game_piece_in_direction_result
+                    == GamePieceInDirectionResult {
+                        game_piece: GamePiece {
+                            piece: Piece::King,
+                            color: opposite_color,
+                        },
+                        is_adjacent: true,
+                    }
+                // Only black pawns attack downwards, so only white's king is vulnerable to pawn
+                // attacks from above.
+                || (*color_to_move == Color::White
+                    && game_piece_in_direction_result
+                        == GamePieceInDirectionResult {
+                            game_piece: GamePiece {
+                                piece: Piece::Pawn,
+                                color: opposite_color,
+                            },
+                            is_adjacent: true,
+                        })
+        };
+    // Same diagonal check, except for black checking downwards diagonals for an immediately
+    // adjacent pawn.
+    let is_threatened_diagonally_downwards =
+        |game_piece_in_direction_result: GamePieceInDirectionResult| {
+            game_piece_in_direction_result.game_piece
+                == GamePiece {
+                    piece: Piece::Bishop,
+                    color: opposite_color,
+                }
+                || game_piece_in_direction_result.game_piece
+                    == GamePiece {
+                        piece: Piece::Queen,
+                        color: opposite_color,
+                    }
+                || game_piece_in_direction_result
+                    == GamePieceInDirectionResult {
+                        game_piece: GamePiece {
+                            piece: Piece::King,
+                            color: opposite_color,
+                        },
+                        is_adjacent: true,
+                    }
+                // Only white pawns attack upwards, so only black's king is vulnerable to pawn
+                // attacks from below.
+                || (*color_to_move == Color::Black
+                    && game_piece_in_direction_result
+                        == GamePieceInDirectionResult {
+                            game_piece: GamePiece {
+                                piece: Piece::Pawn,
+                                color: opposite_color,
+                            },
+                            is_adjacent: true,
+                        })
+        };
+
+    if get_game_piece_in_direction(Direction { x: 0, y: 1 })
+        .is_some_and(is_threatened_horizontally_or_vertically)
+    {
+        return true;
+    }
+    if get_game_piece_in_direction(Direction { x: 1, y: 0 })
+        .is_some_and(is_threatened_horizontally_or_vertically)
+    {
+        return true;
+    }
+    if get_game_piece_in_direction(Direction { x: 0, y: -1 })
+        .is_some_and(is_threatened_horizontally_or_vertically)
+    {
+        return true;
+    }
+    if get_game_piece_in_direction(Direction { x: -1, y: 0 })
+        .is_some_and(is_threatened_horizontally_or_vertically)
+    {
+        return true;
+    }
+
+    if get_game_piece_in_direction(Direction { x: 1, y: 1 })
+        .is_some_and(is_threatened_diagonally_upwards)
+    {
+        return true;
+    }
+    if get_game_piece_in_direction(Direction { x: -1, y: 1 })
+        .is_some_and(is_threatened_diagonally_upwards)
+    {
+        return true;
+    }
+
+    if get_game_piece_in_direction(Direction { x: 1, y: -1 })
+        .is_some_and(is_threatened_diagonally_downwards)
+    {
+        return true;
+    }
+    if get_game_piece_in_direction(Direction { x: -1, y: -1 })
+        .is_some_and(is_threatened_diagonally_downwards)
+    {
+        return true;
+    }
+
+    // At this point, every possible attack coming horizontally, vertically, and diagonally have
+    // been checked. Knights are the only piece that don't move in these ways, so they must be
+    // checked separately.
+    let is_enemy_knight_in_direction = |direction: Direction| {
+        if let Some((x_next, y_next)) = king_tile
+            .x
+            .checked_add_signed(direction.x)
+            .zip(king_tile.y.checked_add_signed(direction.y))
+        {
+            if x_next < MAP_SIZE.x && y_next < MAP_SIZE.y {
+                let tile_pos = TilePos {
+                    x: x_next,
+                    y: y_next,
+                };
+                // If the end tile is at this position, then that means any knight that could be at
+                // that position was captured, leaving the king safe from attack from that position.
+                if tile_pos == *end_tile {
+                    return false;
+                }
+                if get_game_piece_at_position(&tile_pos)
+                    == Some(GamePiece {
+                        piece: Piece::Knight,
+                        color: opposite_color,
+                    })
+                {
+                    return true;
+                }
+            }
+        }
+        false
+    };
+
+    if is_enemy_knight_in_direction(Direction { x: 1, y: 2 }) {
+        return true;
+    }
+    if is_enemy_knight_in_direction(Direction { x: 2, y: 1 }) {
+        return true;
+    }
+    if is_enemy_knight_in_direction(Direction { x: 2, y: -1 }) {
+        return true;
+    }
+    if is_enemy_knight_in_direction(Direction { x: 1, y: -2 }) {
+        return true;
+    }
+    if is_enemy_knight_in_direction(Direction { x: -1, y: -2 }) {
+        return true;
+    }
+    if is_enemy_knight_in_direction(Direction { x: -2, y: -1 }) {
+        return true;
+    }
+    if is_enemy_knight_in_direction(Direction { x: -2, y: 1 }) {
+        return true;
+    }
+    if is_enemy_knight_in_direction(Direction { x: -1, y: 2 }) {
+        return true;
+    }
+
+    // This function checks every possible direction an attack could be coming from, so if the end
+    // of this function is reached, the king is not under attack.
+    false
 }
 
 pub fn highlight_tile(

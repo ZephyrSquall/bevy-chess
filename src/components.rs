@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Piece {
     Bishop,
     King,
@@ -17,7 +17,7 @@ pub enum Color {
     Black,
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
 pub struct GamePiece {
     pub piece: Piece,
     pub color: Color,
