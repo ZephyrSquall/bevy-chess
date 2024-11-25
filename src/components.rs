@@ -44,8 +44,17 @@ impl GamePiece {
 #[derive(Component)]
 pub struct MouseoverHighlight();
 
-#[derive(Component)]
-pub struct LegalMoves(pub Vec<TilePos>);
+#[derive(Clone)]
+pub struct LegalMove {
+    pub destination: TilePos,
+    // Castling, en passant, and pawn double moves require special handling (castling moves a rook
+    // in addition to the king, en passant captures a piece on a square other than the destination
+    // square, and a pawn double move gives en passant rights to the opponent's pawns).
+    pub is_castling: bool,
+}
+
+#[derive(Component, Clone)]
+pub struct LegalMoves(pub Vec<LegalMove>);
 
 #[derive(Component)]
 pub struct CursorDisplay;

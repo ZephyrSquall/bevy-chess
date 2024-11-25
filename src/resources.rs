@@ -1,5 +1,6 @@
 use crate::components::{Color, GamePiece};
 use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
 
 #[derive(Resource)]
 pub struct ColorToMove(pub Color);
@@ -21,7 +22,7 @@ impl ColorToMove {
 pub struct SelectedPiece(pub Option<GamePiece>);
 
 #[derive(Resource, Default)]
-pub struct SelectedPieceOriginalTile(pub Option<Entity>);
+pub struct SelectedPieceOriginalPosition(pub Option<TilePos>);
 
 #[derive(Resource)]
 pub struct MustRecalculateLegalMoves(pub bool);
@@ -38,5 +39,23 @@ impl Default for CursorPos {
         // Initialize the cursor pos at some far away place. It will get updated
         // correctly when the cursor moves.
         Self(Vec2::new(-1000.0, -1000.0))
+    }
+}
+
+#[derive(Resource)]
+pub struct RightToCastle {
+    pub white_kingside: bool,
+    pub white_queenside: bool,
+    pub black_kingside: bool,
+    pub black_queenside: bool,
+}
+impl Default for RightToCastle {
+    fn default() -> Self {
+        RightToCastle {
+            white_kingside: true,
+            white_queenside: true,
+            black_kingside: true,
+            black_queenside: true,
+        }
     }
 }

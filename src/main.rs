@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use resources::{
-    ColorToMove, CursorPos, MustRecalculateLegalMoves, SelectedPiece, SelectedPieceOriginalTile,
+    ColorToMove, CursorPos, MustRecalculateLegalMoves, RightToCastle, SelectedPiece,
+    SelectedPieceOriginalPosition,
 };
 use system::input::update_cursor_pos;
 use system::setup::{setup_board, setup_cursor, setup_pieces};
@@ -36,9 +37,10 @@ fn main() {
     .add_plugins(TilemapPlugin)
     .init_resource::<CursorPos>()
     .init_resource::<SelectedPiece>()
-    .init_resource::<SelectedPieceOriginalTile>()
+    .init_resource::<SelectedPieceOriginalPosition>()
     .init_resource::<ColorToMove>()
     .init_resource::<MustRecalculateLegalMoves>()
+    .init_resource::<RightToCastle>()
     .add_systems(Startup, (setup_board, setup_pieces).chain())
     .add_systems(Startup, setup_cursor)
     .add_systems(First, update_cursor_pos)
